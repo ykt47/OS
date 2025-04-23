@@ -1,0 +1,35 @@
+delete_patron() {
+    clear
+    echo "Delete a Patron Details"
+    echo "======================="
+
+    read -p "Enter Patron ID: " patron_id
+
+    record=$(grep "^$patron_id:" "$FILE")
+
+    if [ -z "$record" ]; then
+        echo " No patron found with ID: $patron_id"
+        read -p "Press Enter to return..."
+        return
+    fi
+
+    IFS=":" read -r id fname lname mobile bdate type joined <<< "$record"
+
+    echo ""
+    echo "First Name: $fname"
+    echo "Last Name: $lname"
+    echo "Mobile Number: $mobile"
+    echo "Birth Date (MM-DD-YYYY): $bdate"
+    echo "Membership Type: $type"
+    echo "Joined Date (MM-DD-YYYY): $joined"
+    echo ""
+
+    read -p "Are you sure you want to DELETE the above Patron Details? (y)es or (q)uit: " confirm
+    if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+        grep -v "^$patron_id:" "$FILE" > temp.txt && mv temp.txt "$FILE"
+        echo " Patron deleted successfully."
+    else
+        echo "Cancelled. Returning to menu."
+    fi
+    read -p "Press Enter to continue..."
+}
