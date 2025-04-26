@@ -173,4 +173,50 @@ while true; do
     esac
 done
 
+sort_by_joined_date() {
+    clear
+    echo "Patron Details Sorted by Joined Date"
+    echo "====================================="
+    printf "%-10s %-20s %-20s %-15s %-12s\n" "Patron ID" "Last Name" "First Name" "Mobile Number" "Joined Date"
+    echo "-------------------------------------------------------------------------------------------"
+
+    # Sort based on joined date (Field 7), reformatting MM-DD-YYYY to YYYYMMDD
+    awk -F ":" '{
+        split($7, d, "-");
+        date = d[3] d[1] d[2];
+        print date ":" $0
+    }' "$PATRON_FILE" | sort -r | cut -d: -f2- | while IFS=":" read -r id fname lname mobile bdate type joined; do
+        printf "%-10s %-20s %-20s %-15s %-12s\n" "$id" "$lname" "$fname" "$mobile" "$joined"
+    done
+
+    echo ""
+    echo "Press (q) to return to Patron Maintenance Menu."
+    echo ""
+
+    read -p "Would you like to export the report as ASCII text file? (y)es (q)uit: " export_choice
+    if [[ "$export_choice" == "y" || "$export_choice" == "Y" ]]; then
+        outfile="patron_sorted_by_joined_date.txt"
+        {
+            echo "Patron Details Sorted by Joined Date"
+            echo "====================================="
+            printf "%-10s %-20s %-20s %-15s %-12s\n" "Patron ID" "Last Name" "First Name" "Mobile Number" "Joined Date"
+            echo "-------------------------------------------------------------------------------------------"
+
+            awk -F ":" '{
+                split($7, d, "-");
+                date = d[3] d[1] d[2];
+                print date ":" $0
+            }' "$PATRON_FILE" | sort -r | cut -d: -f2- | while IFS=":" read -r id fname lname mobile bdate type joined; do
+                printf "%-10s %-20s %-20s %-15s %-12s\n" "$id" "$lname" "$fname" "$mobile" "$joined"
+            done
+        } > "$outfile"
+        echo "Report exported successfully to '$outfile'."
+    else
+        echo "Returning to menu..."
+    fi
+
+    read -p "Press Enter to continue..." dummy
+}
+
+
 
