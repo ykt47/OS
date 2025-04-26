@@ -1,0 +1,176 @@
+#!/bin/bash
+
+PATRON_FILE="patron.txt"
+
+# Function to display the menu
+show_menu() {
+    echo "Patron Maintenance Menu"
+    echo "========================="
+    echo "A – Add New Patron Details"
+    echo "S – Search a Patron (by Patron ID)"
+    echo "U – Update a Patron Details"
+    echo "D – Delete a Patron Details"
+    echo "L – Sort Patrons by Last Name"
+    echo "P – Sort Patrons by Patron ID"
+    echo "J – Sort Patrons by Joined Date"
+    echo "Q – Exit from Program"
+    echo ""
+    read -p "Please select a choice: " choice
+}
+
+add_patron() {
+    echo "Add New Patron Details Form"
+    echo "=============================="
+
+    while true; do
+        # Patron ID
+        while true; do
+            read -p "Patron ID (format PXXXX) or (q)uit: " patron_id
+            patron_id=$(echo "$patron_id" | tr '[:lower:]' '[:upper:]') # Auto uppercase
+            if [[ "$patron_id" == "Q" ]]; then
+                echo "Returning to Patron Maintenance Menu..."
+                return
+            elif [[ ! "$patron_id" =~ ^P[0-9]{4}$ ]]; then
+                echo "Invalid Patron ID. Must be 'P' followed by exactly 4 digits (e.g., P1234)."
+            elif grep -q "^$patron_id:" "$PATRON_FILE"; then
+                echo "Error: Patron ID already exists! Please enter a different Patron ID."
+            else
+                break
+            fi
+        done
+
+        # First Name
+        while true; do
+            read -p "First Name: " first_name
+            if [[ "$first_name" =~ ^[A-Za-z\ ]{2,}$ ]]; then
+                break
+            else
+                echo "Invalid First Name. Only letters and spaces, at least 2 characters."
+            fi
+        done
+
+        # Last Name
+        while true; do
+            read -p "Last Name: " last_name
+            if [[ "$last_name" =~ ^[A-Za-z\ ]{2,}$ ]]; then
+                break
+            else
+                echo "Invalid Last Name. Only letters and spaces, at least 2 characters."
+            fi
+        done
+
+        # Mobile Number
+        while true; do
+            read -p "Mobile Number (01XXXXXXXX): " mobileNumber
+            if [[ "$mobileNumber" =~ ^01[0-9]{8,9}$ ]]; then
+                break
+            else
+                echo "Invalid mobile number format."
+            fi
+        done
+
+        # Birth Date
+        while true; do
+            read -p "Birth Date (MM-DD-YYYY): " birth_date
+            if [[ "$birth_date" =~ ^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])-[0-9]{4}$ ]]; then
+                break
+            else
+                echo "Invalid Birth Date format. Please enter as MM-DD-YYYY."
+            fi
+        done
+
+        # Membership Type
+        while true; do
+            read -p "Membership type (Student/Public): " membership
+            if [[ "$membership" == "Student" || "$membership" == "Public" ]]; then
+                break
+            else
+                echo "Invalid Membership Type."
+            fi
+        done
+
+        joined_date=$(date +"%m-%d-%Y")
+
+        echo  "${patron_id}:${first_name}:${last_name}:${mobileNumber}:${birth_date}:${membership}:${joined_date}" >> "$PATRON_FILE"
+        echo "Patron added successfully!"
+
+        # Ask to add another
+        read -p "Add another new patron details? (y)es or (q)uit: " choice
+        if [[ "$choice" != "y" && "$choice" != "Y" ]]; then
+            break
+        fi
+
+        echo
+    done
+}
+
+
+
+delete_patron() {
+    clear
+    echo "Delete a Patron Details"
+    echo "======================="
+
+    while true; do
+        read -p "Enter Patron ID to delete (or (q) to quit): " patron_id
+        patron_id=$(echo "$patron_id" | tr '[:lower:]' '[:upper:]') # make uppercase
+
+        if [[ "$patron_id" == "Q" ]]; then
+            echo "Returning to Patron Maintenance Menu..."
+            read -p "Press Enter to continue..."
+            return
+        fi
+
+        record=$(grep "^$patron_id:" "$PATRON_FILE")
+
+        if [ -z "$record" ]; then
+            echo "No patron found with ID: $patron_id"
+            echo "Please try again or press (q) to quit."
+            echo ""
+            continue # ask again
+        fi
+
+        # If found, show details
+        IFS=":" read -r id fname lname mobile bdate type joined <<< "$record"
+
+        echo ""
+        echo "First Name: $fname"
+        echo "Last Name: $lname"
+        echo "Mobile Number: $mobile"
+        echo "Birth Date (MM-DD-YYYY): $bdate"
+        echo "Membership Type: $type"
+        echo "Joined Date (MM-DD-YYYY): $joined"
+        echo ""
+
+        read -p "Are you sure you want to DELETE the above Patron Details? (y)es or (n)o: " confirm
+        if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+            grep -v "^$patron_id:" "$PATRON_FILE" > temp.txt && mv temp.txt "$PATRON_FILE"
+            echo "Patron deleted successfully."
+        else
+            echo "Returning to main menu."
+        fi
+
+        read -p "Press Enter to continue..."
+        Return
+
+    done
+}
+
+
+while true; do
+    show_menu
+
+    case "$choice" in
+        A|a) add_patron ;;
+        S|s) echo "Search Patron function not yet implemented." ;;
+        U|u) echo "Update Patron function not yet implemented." ;;
+        D|d) delete_patron ;;
+        L|l) echo "Sort by Last Name function not yet implemented." ;;
+        P|p) echo "Sort by Patron ID function not yet implemented." ;;
+        J|j) echo "Sort by Joined Date function not yet implemented." ;;
+        Q|q) echo "Thank you for using our system!"; exit 0 ;;
+        *) echo "Invalid choice. Please try again." ;;
+    esac
+done
+
+
