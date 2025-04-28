@@ -1,0 +1,347 @@
+#!/bin/bash
+
+PATRON_DB="patrons.db"
+
+search_patron() {
+	while true; do
+		clear
+        echo "----------------------------------------"
+        echo "|       Search a Patron Details        |"
+        echo "----------------------------------------"
+        echo
+        
+        
+        while true; do 
+			read -p "Enter Patron ID:   " patron_id
+			patron_id=$(echo "$patron_id" | tr '[:lower:]' '[:upper:]')
+		
+			if ! validate_patron_id "$patron_id"; then
+				echo "Invalid Patron ID format. Must be P followed by 4 digits (e.g., P1001)."
+				continue
+			fi 
+			
+			patron_record=$(grep -i "^${patron_id}:" "$PATRON_DB" 2>/dev/null)
+			if [ -z "$patron_record" ]; then
+				echo "Patron not found. Please try again."
+				continue
+			fi
+			
+			break
+		done
+		
+		
+		IFS=':' read -ra fields <<< "$patron_record"
+		
+		clear
+		echo "----------------------------------------"
+        echo "|       Search a Patron Details        |"
+        echo "----------------------------------------"
+        echo
+        echo "Enter Patron ID: ${fields[0]}"
+        echo
+        echo "First Name: ${fields[1]}"
+        echo "Last Name: ${fields[2]}"
+        echo "Mobile Number: ${fields[3]}"
+        echo "Birth Date (MM-DD-YYYY): ${fields[4]}"
+        echo "Membership Type: ${fields[5]}"
+        echo "Joined Date (MM-DD-YYYY): ${fields[6]}"
+        echo
+        echo "--------------------------------------"
+        echo "Press (q) to return to Patron Maintenance Menu."
+        echo
+        
+        
+        while true; do 
+        	read -p "Search another patron? (y)es or (q)uit: " choice
+        	choice=$(echo "$choice" | tr '[:upper:]' '[:lower:]')
+        	
+        	
+        	case "$choice" in
+        		q)
+        			return
+        			;;
+        		y)
+        			break
+        			;;
+        		*)
+        			echo "Invalid choice. Please enter y or q."
+        			;;
+        	esac
+        done		
+	done
+}
+
+update_patron(){
+	while true; do
+		clear
+		echo "-------------------------------------------"
+		echo "|			Update a Patron Details			|"
+		echo "-------------------------------------------"
+		echo
+		
+		while true; do 
+			read -p "Enter Patron ID: " patron_id
+			patron_id=$(echo "$patron_id" | tr '[:lower:]' '[:upper:]')
+			
+			if ! validate_patron_id "$patron_id"; then
+				echo "Invalid Patron ID format. Must be P followed by 4 digits (e.g., P1000)."
+				continue
+			fi
+			
+			
+			patron_record=$(prep -1 "^${patron_id}:" "$PATRON_DB" 2>/dev/null)
+			if [ -z "$patron_record" ]; then
+				echo "Patron not found. Please try again."
+				continue
+			fi
+			
+			break
+			
+		done
+		
+		IFS=':' read -ra fields <<< "$patron_record"
+		
+		
+		clear
+		echo "-------------------------------------------"
+		echo "|			Update a Patron Details			|"
+		echo "-------------------------------------------"
+		echo
+		echo "Enter Patron ID: ${fields[0]}"
+		echo 
+		echo "First Name: ${fields[1]}"
+		echo "Last Name: ${fields[2]}"
+		echo "Mobile Number: ${fields[3]}"
+		echo "Birth Date (MM-DD-YYYY): ${fields[4]}"
+		echo "Membership Type: ${fields[5]}"
+		echo "Joined Date (MM-DD-YYYY): ${fields[6]}"
+		echo
+		echo "-------------------------------------------"
+		echo "Pree (q) to return to Patron Maintenance Menu."
+		echo
+		
+		while true; do
+			read -p "Are you sure you want to UPDATE the above Patron Details? (y)es or (q)uit: " choice
+			choice=$(echo "$choice" | tr '[:upper:]' '[:lower:]')
+			
+			case "$choice" in
+			q)
+				return
+				;;
+			y)
+				update_fields=("$(fields[@]}")
+				
+				
+				echo
+				echo "Enter new values (leave blank to keep current value):"
+				
+				
+				while true; do
+					read -p "First Name [${fields[1]}]: " new_first
+					if [ -z "$new_first" ]; then
+						break
+					fi
+					if [[ "$new_first" =~ ^[a-zA-Z\ ]+$ ]]; then
+						update_fields[1]="$new_first"
+						break
+					else
+						echo "Invalid first name. Only letters and spaces allowed."
+					fi
+				done
+				
+				
+				while true; do 
+					read -p "Last Name [${fields[2]}]: " new_last
+					if [ -z "$new_last" ]; then
+						break
+					fi 
+					if [[ "$new_last" =~ ^[a-zA-Z\ ]+$ ]]; then
+						update_fields[2]="$new_last"
+						break
+					else
+						echo "Invalid last name. Only letters and spaces allowed."
+					fi 
+				done
+				
+				
+				while true; do 
+					read -p "Mobile Number [${fields[3]}]: " new_mobile
+					if [ -z "$new_mobile" ]; then
+						break
+					fi 
+					if validate_mobile "$new_mobile"; then
+						update_fields[3]="$new_mobile"
+						break
+					else
+						echo "Invalid mobile format. Use XXX-XXXXXXX or XXX-XXXXXXXX."
+					fi 
+				done
+				
+				
+				while true; do 
+					read -p "Birth Date (MM-DD-YYYY) [${fields[4]}]: " new_birth
+					
+					if [ -z "$new_birth" ]; then
+						break
+					fi 
+					if validate_date "$new_birth"; then
+						update_fields[4]="$new_birth"
+						break
+					else
+						echo "Invalid date format or value. Use MM-DD-YYYY."
+					fi 
+				done
+				
+				
+				while true; do 
+					read -p "Membership Type [${fields[5]}]: " new_membership
+					if [ -z "$new_membership" ]; then
+						break
+					fi 
+					if validate_membership "$new_membership"; then
+						update_fields[5]="$new_membership"
+						break
+					else
+						echo "Invalid membership type. Must be Student or Public."
+					fi 
+				done
+				
+				
+				while true; do 
+					read -p "Joined Date (MM-DD-YYYY) [$fields[6]}]: " new_joined
+					if [ -z "$new_joined" ]; then
+						break
+					fi 
+					if validate_date "$new_joined"; then
+						update_fields[6]="$new_joined"
+						break
+					else
+						echo "Invalid date format or value. Use MM-DD-YYYY."
+					fi 
+				done
+				
+				clear
+				echo "-------------------------------------------"
+				echo "|			Update a Patron Details			|"
+				echo "-------------------------------------------"
+				echo 
+				echo "Enter Patron ID: ${update_fields[0]}"
+				echo
+				echo "First Name: ${update_fields[1]}"
+				echo "Last Name: ${update_fields[2]}"
+				echo "Mobile Number: ${update_fields[3]}"
+				echo "Birth Date (MM-DD-YYYY): ${update_fields[4]}"
+				echo "Membership Type: ${update_fields[5]}"
+				echo "Joined Date (MM-DD-YYYY): ${update_fields[6]}"
+				echo
+				echo "-------------------------------------------"
+				
+				
+				while true; do 
+					read -p "Confirm UPDATE of these details? (y)es or (n)o: " confirm
+					case "$(echo "$confirm" | tr '[:upper:]' '[:lower:]')" in
+						y)
+							temp_file=$(mktemp)
+							grep -v "^${patron_id}:" "$PATRON_DB" > "$temp_file"
+							echo "$(update_fields[0]}:${update_fields[1]}:${update_fields[2]}:${update_fields[3]}:${update_fields[4]}:${update_fields[5]}:${update_fields[6]}" >> "$temp_file"
+							mv "$temp_file" "$PATRON_DB"
+							echo "Patron record updated succesfully."
+							read -n1 -p "Press any key to continue..."
+							return
+							;;
+						n)
+							echo "Update cancelled."
+							read -n1 -p "Press any key to continue..."
+							break 2
+							;;
+						*)
+							echo "Invalid choice. Please enter y or q."
+							;;
+					esac
+				done
+				;;
+			*)
+				echo "Invalid choice. Please enter y or q."
+				;;
+		esac
+	done
+done
+}
+
+
+sort_by_id(){
+	clear
+	
+	
+	if [ ! -f "$PATRON_DB" ]; then 
+		echo "| Error: Patron database not found.	|"
+		echo -n1 -p "| Press any key to continue..."
+		return
+	fi 
+	
+	sorted_records=$(sort -t':' -k,1 "$PATRON_DB" 2>/dev/null)
+	
+	if [ -z "$sorted_records" ]; then
+		echo "| No patron records found in database.	|"
+		read -n1 -p "| Press any key to continue..."
+		return
+	fi 
+	
+	
+	echo "| Patron Details Sorted by Patron ID	|"
+	echo "|-------------------------------------|"
+	printf "| %-10s | %-15s | %-15s | %-15s | %-12s |\n" \
+		   "Patron ID" "Last Name" "First Name" "Mobile Number" "Birth Date"
+	echo "|---|---|---|---|---|"
+	
+	
+	while IFS= read -r record; do 
+		IFS=':' read -ra fields <<< "$record"
+		
+		
+		if [ ${#fields[@]} -ge 5 ]; then
+			printf "| %-10s | %-15s | %-15s | %-15s | %-12s |\n" \
+				   "${fields[0]}" "${fields[2]}" "${fields[1]}" "${fields[3]}" "${fields[4]}" 
+		fi 
+	done <<< "$sorted_records"
+	
+	
+	echo "|-------------------------------------------------|"
+	echo "| Press (q) to return to Patron Maintenance Menu.	|"
+	echo "|-------------------------------------------------|"
+	
+	while true; do 
+		read -p "| Would you like to export the report as ASCII text file? (y)es or (q)uit: " choice
+		case "$(echo "$choice" | tr '[:upper:]' '[:lower:]')" in
+			y) 
+				{
+					echo "Patron Details Sorted by Patron ID"
+					echo "----------------------------------"
+					printf "%-10s %-15s %-15s %-15s %-12s\n" \
+						   "Patron ID" "Last Name" "First Name" "Mobile Number" "Birth Date"
+					echo "-----------------------------------------------------"
+					
+					while IFS= read -r record; do 
+						IFS=':' read -ra fields <<< "$record"
+						if [ ${#fields[@]} -ge 5 ]; then
+							printf "%-10s %-15s %-15s %-15s %-12s\n" \
+								   "${fields[0]}" "${fields[2]}" "$
+								   {fields[1]}" "${fields[3]}" "${fields[4]}"
+						fi 
+					done <<< "$sorted_records"
+				} > "$OUTPUT_FILE"
+				
+				echo "| Report exported to $OUTPUT_FILE		|"
+				read -n1 -p " Press any key to continue..."
+				return
+				;;
+			q)
+				return
+				;;
+			*)
+				echo "| Invalid choice. Please enter y or q.	|"
+				;;
+		esac
+	done
+}
+
